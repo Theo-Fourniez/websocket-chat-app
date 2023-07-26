@@ -1,30 +1,33 @@
 package com.theofourniez.whatsappclone.message;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MessageService {
 
     @Autowired
-    private MessageRepository bookRepository;
+    private MessageRepository messageRepository;
 
+    public MessageService(MessageRepository messageRepository){
+        this.messageRepository = messageRepository;
+    }
     public List<Message> list() {
-        return bookRepository.findAll();
+        return messageRepository.findAll();
     }
 
     public Message save(Message message) {
-        return bookRepository.save(message);
+        return messageRepository.save(message);
     }
 
     public Optional<Message> get(long id) {
-        return bookRepository.findById(id);
+        return messageRepository.findById(id);
     }
 
     public void delete(long id) {
-        bookRepository.deleteById(id);
+        messageRepository.deleteById(id);
     }
 }

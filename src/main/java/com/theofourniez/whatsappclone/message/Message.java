@@ -1,10 +1,7 @@
 package com.theofourniez.whatsappclone.message;
 
 import com.theofourniez.whatsappclone.authentication.ChatUser;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 
 @Entity
 public class Message {
@@ -13,10 +10,10 @@ public class Message {
     private int id;
     private String content;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     private ChatUser sender;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     private ChatUser recipient;
 
     public Message() {
