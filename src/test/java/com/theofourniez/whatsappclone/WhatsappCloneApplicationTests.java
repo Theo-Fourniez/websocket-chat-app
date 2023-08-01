@@ -9,5 +9,4 @@ class WhatsappCloneApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }

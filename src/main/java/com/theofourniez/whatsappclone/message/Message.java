@@ -1,26 +1,32 @@
 package com.theofourniez.whatsappclone.message;
 
-import com.theofourniez.whatsappclone.authentication.ChatUser;
+import com.theofourniez.whatsappclone.user.ChatUser;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
 
 @Entity
+@Table(name = "messages")
 public class Message {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String content;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER, targetEntity = ChatUser.class)
     private ChatUser sender;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER, targetEntity = ChatUser.class)
     private ChatUser recipient;
+
+    @CreationTimestamp
+    private Instant createdOn;
 
     public Message() {
     }
 
-    public Message(int id, String content, ChatUser sender, ChatUser recipient) {
-        this.id = id;
+    public Message(String content, ChatUser sender, ChatUser recipient) {
         this.content = content;
         this.sender = sender;
         this.recipient = recipient;
