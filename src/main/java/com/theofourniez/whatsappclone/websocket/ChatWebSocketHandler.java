@@ -1,12 +1,12 @@
 package com.theofourniez.whatsappclone.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.theofourniez.whatsappclone.message.Message;
 import com.theofourniez.whatsappclone.message.MessageService;
 import com.theofourniez.whatsappclone.user.ChatUser;
 import com.theofourniez.whatsappclone.user.ChatUserDetailsService;
-import lombok.SneakyThrows;
+import com.theofourniez.whatsappclone.websocket.dtos.SendMessageRequest;
+import com.theofourniez.whatsappclone.websocket.dtos.SendMessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 // TODO : Add a special message type to send to the client from the server
+// TODO : refactor the code to make it cleaner
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -49,22 +50,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    /// A record used to validate incoming messages from users as JSON
-    private record SendMessageRequest(String message, String to) {}
-
-    public SendMessageRequest parseStringToMessageRequest(String message) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(message, SendMessageRequest.class);
-    }
-
-    private record SendMessageResponse(String message, String from) {}
-
-    @SneakyThrows
-    public String convertMessageResponseToString(SendMessageResponse message) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.writeValueAsString(message);
-    }
-
     private Stream<ConnectedUser> getAllUsersExcept(ChatUser currentUser){
         return currentConnectedUsers
                 .stream()
@@ -86,15 +71,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }).findFirst().orElseThrow(() -> new RuntimeException("Session not found"));
         logger.debug("User["+ currentConnectedUser.user.getUsername()+"] " + " is sending a message");
 
-        // Parse the message he sent as JSON
+        // Parse the message the client sent as JSON
         SendMessageRequest sendMessageRequest;
         try {
-            sendMessageRequest = parseStringToMessageRequest(message.getPayload());
+            sendMessageRequest = SendMessageRequest.parse(message.getPayload());
         }catch (JsonProcessingException e){
             logger.error("User["+ currentConnectedUser.user.getUsername()+"] " + "Could not parse JSON: " + message.getPayload());
-            webSocketSession.sendMessage(new TextMessage(convertMessageResponseToString(new SendMessageResponse(
+            webSocketSession.sendMessage(new TextMessage(new SendMessageResponse(
                     "Could not " +
-                    "parse JSON", "Server"))));
+                    "parse JSON", "Server").toString()));
             return;
         }
 
@@ -105,14 +90,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         // Retrieve the friend he wants to send the message to
         Optional<ChatUser> friendToSendTo =
                 currentConnectedUser.user.getFriends().stream().filter(friend -> {
-                    return friend.getUsername().equals(sendMessageRequest.to);
+                    return friend.getUsername().equals(sendMessageRequest.to());
                 }).findFirst();
 
         // The user does not have this user as friend
         if(friendToSendTo.isEmpty()){
-            webSocketSession.sendMessage(new TextMessage(convertMessageResponseToString(new SendMessageResponse(
-                    sendMessageRequest.to + " is not in your friendlist", "Server"
-            ))));
+            webSocketSession.sendMessage(new TextMessage(new SendMessageResponse(
+                    sendMessageRequest.to() + " is not in your friendlist", "Server"
+            ).toString()));
             return;
         }
 
@@ -120,18 +105,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         // If he is, we send him the message directly
         // If he is not, we save the message in the database
         currentConnectedUsers.stream().filter(connectedUser -> {
-            return connectedUser.user.getUsername().equals(sendMessageRequest.to);
-        }).findFirst().ifPresentOrElse(connectedFriend -> {
+            return connectedUser.user.getUsername().equals(sendMessageRequest.to());
+        }).findFirst().ifPresent(connectedFriend -> {
             try {
-                connectedFriend.session.sendMessage(new TextMessage(convertMessageResponseToString(new SendMessageResponse(
-                        sendMessageRequest.message, currentConnectedUser.user.getUsername()))));
+                connectedFriend.session.sendMessage(new TextMessage(new SendMessageResponse(
+                        sendMessageRequest.message(), currentConnectedUser.user.getUsername()).toString()));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        },() -> {
-            Message messageToSave = new Message(sendMessageRequest.message,currentConnectedUser.user,friendToSendTo.get());
-            messageService.save(messageToSave);
         });
+
+        Message messageToSave = new Message(sendMessageRequest.message(),currentConnectedUser.user,
+                friendToSendTo.get());
+        messageService.save(messageToSave);
     }
 
     @Override
@@ -168,6 +154,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus status) throws Exception {
         super.afterConnectionClosed(webSocketSession, status);
         logger.debug("Session["+webSocketSession.getId()+"] " + "Connection closed");
+
         // We remove the user from the current sessions list when he closes the connection
         currentConnectedUsers.stream().filter(connectedUser -> {
             return connectedUser.session.equals(webSocketSession);

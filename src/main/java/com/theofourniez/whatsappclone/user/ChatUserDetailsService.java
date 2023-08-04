@@ -3,11 +3,9 @@ package com.theofourniez.whatsappclone.user;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 public class ChatUserDetailsService implements UserDetailsService {
@@ -35,17 +33,13 @@ public class ChatUserDetailsService implements UserDetailsService {
         chatUserRepository.deleteById(id);
     }
 
-    @Transactional
-    public Set<ChatUser> getFriends(ChatUser user){
-        return chatUserRepository.findByUsername(user.getUsername()).get().getFriends();
-    }
-
     @Override
     public ChatUser loadUserByUsername(String username) throws UsernameNotFoundException {
-        return chatUserRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Username " + username + " not found !"));
+        return chatUserRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(
+                "The user with the username " + username + " could not be found !"));
     }
 
     public ChatUser loadUserWithFriendsByUsername(String username) throws UsernameNotFoundException {
-        return chatUserRepository.findWithFriendsByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Username " + username + " not found !"));
+        return chatUserRepository.findWithFriendsByUsername(username).orElseThrow(() -> new UsernameNotFoundException("The user with the username " + username + " could not be found !"));
     }
 }

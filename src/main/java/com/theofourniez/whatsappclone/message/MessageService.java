@@ -1,6 +1,6 @@
 package com.theofourniez.whatsappclone.message;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.theofourniez.whatsappclone.user.ChatUser;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,8 +9,7 @@ import java.util.Optional;
 @Service
 public class MessageService {
 
-    @Autowired
-    private MessageRepository messageRepository;
+    private final MessageRepository messageRepository;
 
     public MessageService(MessageRepository messageRepository){
         this.messageRepository = messageRepository;
@@ -29,5 +28,13 @@ public class MessageService {
 
     public void delete(long id) {
         messageRepository.deleteById(id);
+    }
+
+    public List<Message> getSentMessages(ChatUser sender) {
+        return messageRepository.findAllBySender(sender);
+    }
+
+    public List<Message> getConversationBetween(ChatUser sender, ChatUser recipient) {
+        return messageRepository.findAllMessagesBetweenSenderAndRecipient(sender, recipient);
     }
 }

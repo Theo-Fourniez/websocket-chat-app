@@ -1,6 +1,8 @@
 package com.theofourniez.whatsappclone.user;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.theofourniez.whatsappclone.message.Message;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -33,7 +35,15 @@ public class ChatUser implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "friend_id")
     )
     @JsonIgnore
-    private Set<ChatUser> friends = new HashSet<>(1);
+    private Set<ChatUser> friends = new HashSet<>();
+
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<Message> messagesSent = new ArrayList<>();
+
+    @OneToMany(mappedBy = "recipient", fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<Message> messagesReceived = new ArrayList<>();
 
     public void addFriend(ChatUser newFriend) {
         if (this.friends.stream().noneMatch(newFriend::equals) && !this.equals(newFriend)) {
@@ -94,9 +104,5 @@ public class ChatUser implements UserDetails {
             return Objects.equals(this.id, ((ChatUser) obj).getId());
         }
         return false;
-    }
-
-    public FriendsDto toFriendDTO(){
-        return new FriendsDto(this.getFriends());
     }
 }

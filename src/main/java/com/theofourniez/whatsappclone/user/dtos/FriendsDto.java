@@ -1,4 +1,6 @@
-package com.theofourniez.whatsappclone.user;
+package com.theofourniez.whatsappclone.user.dtos;
+
+import com.theofourniez.whatsappclone.user.ChatUser;
 
 import java.util.List;
 import java.util.Set;
