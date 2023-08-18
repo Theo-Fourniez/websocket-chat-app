@@ -1,10 +1,13 @@
 package com.theofourniez.whatsappclone.user;
 
 import com.theofourniez.whatsappclone.user.dtos.ChatUserDto;
+import com.theofourniez.whatsappclone.user.dtos.ChatUserWithFriendsDto;
 import com.theofourniez.whatsappclone.user.dtos.FriendsDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Set;
 
 @RestController
 @RequestMapping("/user")
@@ -14,14 +17,25 @@ class ChatUserController {
         this.chatUserDetailsService = chatUserDetailsService;
     }
 
-    @GetMapping
+    @GetMapping(params = "withoutFriends")
     public ResponseEntity<ChatUserDto> getUser() {
         ChatUser user = (ChatUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return ResponseEntity.ok(new ChatUserDto(user));
     }
+
+    @GetMapping
+    public ResponseEntity<ChatUserWithFriendsDto> getFullUser() {
+        ChatUser user = (ChatUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        user = chatUserDetailsService.loadUserWithFriendsByUsername(user.getUsername());
+
+        ChatUserWithFriendsDto userWithFriendsDto =
+                new ChatUserWithFriendsDto(user, user.getFriends());
+        return ResponseEntity.ok(userWithFriendsDto);
+    }
+
     private record PostFriendRequest(String username){}
     @PostMapping(path = "/friends")
-    public ResponseEntity<String> postFriend(PostFriendRequest req) {
+    public ResponseEntity<Set<ChatUser>> postFriend(@RequestBody PostFriendRequest req) {
         ChatUser user = (ChatUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         // We need to reload the user with the friends field populated
@@ -30,7 +44,7 @@ class ChatUserController {
         ChatUser friendToAdd = chatUserDetailsService.loadUserByUsername(req.username);
         user.addFriend(friendToAdd);
         chatUserDetailsService.save(user);
-        return ResponseEntity.ok("Friend added successfully");
+        return ResponseEntity.ok(user.getFriends());
 
     }
 
@@ -40,5 +54,11 @@ class ChatUserController {
         FriendsDto friendsDto =
                 new FriendsDto(chatUserDetailsService.loadUserWithFriendsByUsername(user.getUsername()).getFriends());
         return ResponseEntity.ok(friendsDto);
+    }
+
+    @GetMapping("/logout")
+    public ResponseEntity<String> logout() {
+        SecurityContextHolder.clearContext();
+        return ResponseEntity.ok("Logged out successfully");
     }
 }
