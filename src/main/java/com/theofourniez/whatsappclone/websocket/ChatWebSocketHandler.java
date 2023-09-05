@@ -103,7 +103,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         // We check if the friend is connected
         // If he is, we send him the message directly
-        // If he is not, we save the message in the database
         currentConnectedUsers.stream().filter(connectedUser -> {
             return connectedUser.user.getUsername().equals(sendMessageRequest.to());
         }).findFirst().ifPresent(connectedFriend -> {
@@ -114,7 +113,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 throw new RuntimeException(e);
             }
         });
-
+        // In every case, we save the message in the database to be able to retrieve it later
         Message messageToSave = new Message(sendMessageRequest.message(),currentConnectedUser.user,
                 friendToSendTo.get());
         messageService.save(messageToSave);

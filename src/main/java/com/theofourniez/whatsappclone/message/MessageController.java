@@ -17,7 +17,7 @@ class MessageController {
     private final MessageService messageService;
     private final ChatUserDetailsService chatUserDetailsService;
 
-    public MessageController(MessageService messageService, ChatUserDetailsService chatUserDetailsService) {
+    public MessageController(MessageService messageService, ChatUserDetailsService      chatUserDetailsService) {
         this.messageService = messageService;
         this.chatUserDetailsService = chatUserDetailsService;
     }
