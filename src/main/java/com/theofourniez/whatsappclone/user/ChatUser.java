@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.theofourniez.whatsappclone.message.Message;
 import jakarta.persistence.*;
 import lombok.*;
+import nl.martijndwars.webpush.Subscription;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -44,6 +47,9 @@ public class ChatUser implements UserDetails {
     @OneToMany(mappedBy = "recipient", fetch = FetchType.LAZY)
     @JsonBackReference
     private List<Message> messagesReceived = new ArrayList<>();
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Subscription pushSubscription;
 
     public void addFriend(ChatUser newFriend) {
         if (this.friends.stream().noneMatch(newFriend::equals) && !this.equals(newFriend)) {

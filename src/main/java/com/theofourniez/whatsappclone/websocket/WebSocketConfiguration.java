@@ -1,6 +1,7 @@
 package com.theofourniez.whatsappclone.websocket;
 
 import com.theofourniez.whatsappclone.message.MessageService;
+import com.theofourniez.whatsappclone.pushnotifications.PushMessageService;
 import com.theofourniez.whatsappclone.user.ChatUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +17,13 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
 
     private final ChatUserDetailsService chatUserDetailsService;
     private final MessageService messageService;
-    public WebSocketConfiguration(ChatUserDetailsService chatUserDetailsService, MessageService messageService) {
+    private final PushMessageService pushMessageService;
+
+    public WebSocketConfiguration(ChatUserDetailsService chatUserDetailsService,
+                                  MessageService messageService, PushMessageService pushMessageService) {
         this.chatUserDetailsService = chatUserDetailsService;
         this.messageService = messageService;
+        this.pushMessageService = pushMessageService;
     }
 
     @Override
@@ -28,7 +33,7 @@ public class WebSocketConfiguration implements WebSocketConfigurer {
 
     @Bean
     public WebSocketHandler myHandler() {
-        return new ChatWebSocketHandler(chatUserDetailsService, messageService);
+        return new ChatWebSocketHandler(chatUserDetailsService, messageService, pushMessageService);
     }
 
     public HttpSessionHandshakeInterceptor handshakeInterceptor() {

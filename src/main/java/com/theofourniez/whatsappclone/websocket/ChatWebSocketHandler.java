@@ -3,12 +3,16 @@ package com.theofourniez.whatsappclone.websocket;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.theofourniez.whatsappclone.message.Message;
 import com.theofourniez.whatsappclone.message.MessageService;
+import com.theofourniez.whatsappclone.pushnotifications.PushMessageService;
+import com.theofourniez.whatsappclone.pushnotifications.PushNotification;
 import com.theofourniez.whatsappclone.user.ChatUser;
 import com.theofourniez.whatsappclone.user.ChatUserDetailsService;
 import com.theofourniez.whatsappclone.websocket.dtos.SendMessageRequest;
 import com.theofourniez.whatsappclone.websocket.dtos.SendMessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.CloseStatus;
@@ -30,12 +34,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final List<ConnectedUser> currentConnectedUsers = new ArrayList<ConnectedUser>();
+    private PushMessageService pushMessageService;
 
     private final ChatUserDetailsService chatUserDetailsService;
     private final MessageService messageService;
-    public ChatWebSocketHandler(ChatUserDetailsService chatUserDetailsService, MessageService messageService) {
+    public ChatWebSocketHandler(ChatUserDetailsService chatUserDetailsService,
+                                MessageService messageService, PushMessageService pushMessageService) {
         this.chatUserDetailsService = chatUserDetailsService;
         this.messageService = messageService;
+        this.pushMessageService = pushMessageService;
     }
 
 
@@ -105,14 +112,37 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         // If he is, we send him the message directly
         currentConnectedUsers.stream().filter(connectedUser -> {
             return connectedUser.user.getUsername().equals(sendMessageRequest.to());
-        }).findFirst().ifPresent(connectedFriend -> {
+        }).findFirst().ifPresentOrElse(connectedFriend -> {
             try {
                 connectedFriend.session.sendMessage(new TextMessage(new SendMessageResponse(
                         sendMessageRequest.message(), currentConnectedUser.user.getUsername()).toString()));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }, () -> {
+            // If he is not, we send him a push notification
+            System.out.println("Sending push notification to " + friendToSendTo.get().getUsername());
+            var upToDateFriend =
+                    chatUserDetailsService.loadUserByUsername(friendToSendTo.get().getUsername());
+            try {
+                pushMessageService.sendNotification(upToDateFriend.getPushSubscription(), new PushNotification(
+                        "\uD83D\uDD34 New message from " + currentConnectedUser.user.getUsername(),
+                        sendMessageRequest.message(), "assets/icons/whatsapp-icon-64x64.png",
+                        currentConnectedUser.user.getUsername(),
+                        null,
+                        new JSONObject().put(
+                                "onActionClick",
+                                new JSONObject().put("open-message", new JSONObject().put("operation",
+                                        "focusLastFocusedOrOpen").put("url",
+                                        "http://localhost:4200/"))).put("username", currentConnectedUser.user.getUsername()),
+                        List.of(new JSONObject().put("action", "open-message").put("title",
+                                "Go to conversation"))));
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
         });
+
+
         // In every case, we save the message in the database to be able to retrieve it later
         Message messageToSave = new Message(sendMessageRequest.message(),currentConnectedUser.user,
                 friendToSendTo.get());
