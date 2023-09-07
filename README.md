@@ -1,6 +1,17 @@
-# Whatsapp web Clone
+# Whatsapp Web Clone Backend
+This project was made to learn Angular 16 and Spring boot 3. The goal was to create a app similar to WhatsApp Web.
 
+# Functionality
+* Real time messaging (using websockets)
+* Delayed messaging, for example when a user sends a message to another offline user (using HTTP requests)
+* Receiving web push in browser notifications when receiving messages while the app is not opened
+* Adding friends
 
+# Dev environment
+* IntelliJ IDEA
+* Java 17
+* H2 in memory database
+  
 # Used references : 
 * https://simple-push-demo.vercel.app/ : to tinker with push notifications
 * https://developer.mozilla.org/en-US/docs/Web/API/Push_API
