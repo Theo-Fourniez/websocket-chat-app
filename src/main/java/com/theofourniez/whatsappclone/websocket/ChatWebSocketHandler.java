@@ -33,7 +33,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final List<ConnectedUser> currentConnectedUsers = new ArrayList<ConnectedUser>();
+    private static final List<UserSession> currentConnectedUsers = new ArrayList<UserSession>();
     private PushMessageService pushMessageService;
 
     private final ChatUserDetailsService chatUserDetailsService;
@@ -47,17 +47,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
 
     /// A record used to keep all the current users connected via websocket
-    private class ConnectedUser {
+    private class UserSession {
         protected ChatUser user;
         protected WebSocketSession session;
 
-        public ConnectedUser(ChatUser user, WebSocketSession session) {
+        public UserSession(ChatUser user, WebSocketSession session) {
             this.user = user;
             this.session = session;
         }
     }
 
-    private Stream<ConnectedUser> getAllUsersExcept(ChatUser currentUser){
+    private Stream<UserSession> getAllUsersExcept(ChatUser currentUser){
         return currentConnectedUsers
                 .stream()
                 .filter(connectedUser -> !connectedUser.user.getUsername().equals(currentUser.getUsername()))
@@ -73,7 +73,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 new ConcurrentWebSocketSessionDecorator(rawSession, 10000, 1024*1024);
 
         // Get the current user from the session
-        ConnectedUser currentConnectedUser = currentConnectedUsers.stream().filter(u -> {
+        UserSession currentConnectedUser = currentConnectedUsers.stream().filter(u -> {
             return u.session.equals(rawSession);
         }).findFirst().orElseThrow(() -> new RuntimeException("Session not found"));
         logger.debug("User["+ currentConnectedUser.user.getUsername()+"] " + " is sending a message");
@@ -161,7 +161,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         logger.debug("Session["+webSocketSession.getId()+"] " + "User connected: " + senderUser.getUsername());
 
-        ConnectedUser currentSession = new ConnectedUser(senderUser, webSocketSession);
+        UserSession currentSession = new UserSession(senderUser, webSocketSession);
 
         // We firstly check if the user has already opened a session
         boolean sessionAlreadyOpened = currentConnectedUsers.stream().anyMatch(connectedUser -> {
