@@ -4,7 +4,7 @@ This project was made to learn Angular 16 and Spring boot 3. The goal was to cre
 # Functionality
 * Real time messaging (using websockets)
 * Delayed messaging, for example when a user sends a message to another offline user (using HTTP requests)
-* Receiving web push in browser notifications when receiving messages while the app is not opened
+* Receiving web push in browser notifications when receiving messages while the app is not opened (using push API and service workers)
 * Adding friends
 
 # Dev environment
